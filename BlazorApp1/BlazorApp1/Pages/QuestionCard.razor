@@ -1,0 +1,35 @@
+﻿@using BlazorApp1.Models
+@using Blazorise
+
+
+<Card Width="Width.Is50" Margin="Margin.Is(margin)" Background="Background.Info">
+    <CardBody Padding="Padding.Is1">
+        <h3>@Question.DisplayValue</h3>
+        <RadioGroup TValue="string" Name="@(Guid.NewGuid().ToString())" CheckedValueChanged="OnAnswerValueChanged">
+            @foreach(var answer in Question.Answers)
+            {
+                <Radio Value="@answer.AnswerId">@answer.DisplayValue</Radio>
+            }
+        </RadioGroup>
+    </CardBody>
+</Card>
+
+@code {
+    private const string margin = "mx-auto my-2";
+
+    [Parameter]
+    public Question Question { get; set; }
+
+    [Parameter]
+    public string Answer { get; set; }
+
+    [Parameter]
+    public EventCallback<QuestionWithAnswer> OnAnswerSelected { get; set; }
+
+    private async Task OnAnswerValueChanged(string value)
+    {
+        Answer = value;
+
+        await OnAnswerSelected.InvokeAsync(new QuestionWithAnswer { QuestionId = Question.QuestionId, AnswerId = value });
+    }
+}

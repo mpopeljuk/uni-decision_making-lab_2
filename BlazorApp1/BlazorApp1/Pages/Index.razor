@@ -1,0 +1,74 @@
+﻿@page "/"
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@using Blazorise
+@inject QuestionService QuestionService;
+
+<PageTitle>Index</PageTitle>
+
+<Card Width="Width.Is50" Margin="Margin.Is(margin)" Background="Background.Light">
+    <CardBody Padding="Padding.Is1">
+        <h3>Рекомендації моделей авто</h3>
+    </CardBody>
+</Card>
+
+@foreach(var question in QuestionWithAnswers)
+{
+    <QuestionCard Question="@GetQuestion(question.QuestionId)" Answer="@question.AnswerId" OnAnswerSelected="OnAnswered"/>
+}
+
+@if(FinalResult is not null)
+{
+<Card Width="Width.Is50" Margin="Margin.Is(margin)" Background="Background.Success">
+    <CardImage Source="@FinalResult.PictureUrl" Alt=""></CardImage>
+    <CardBody Padding="Padding.Is1">
+        <h3>@FinalResult.DisplayValue</h3>
+    </CardBody>
+</Card>
+}
+
+@code {
+    private const string margin = "mx-auto my-2";
+
+    private List<QuestionWithAnswer> QuestionWithAnswers { get; set; } = new List<QuestionWithAnswer>();
+
+    private List<Question> AllQuestions = new List<Question>(); 
+    private List<Result> AllResults= new List<Result>();
+
+    private Result FinalResult { get; set; } = null;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        AllQuestions = QuestionService.GetAllQuestions();
+        AllResults = QuestionService.GetAllResults();
+
+        QuestionWithAnswers.Add(new QuestionWithAnswer { QuestionId = AllQuestions.First().QuestionId, Pos = 0 });
+    }
+
+    private Question GetQuestion(string questionId)
+    {
+        return AllQuestions.First(x => x.QuestionId == questionId);
+    }
+
+    private async Task OnAnswered(QuestionWithAnswer value)
+    {
+        FinalResult = null;
+
+        var q = QuestionWithAnswers.First(x => x.QuestionId == value.QuestionId);
+        q.AnswerId = value.AnswerId;
+
+        QuestionWithAnswers = QuestionWithAnswers.Where(x => x.Pos <= q.Pos).ToList();
+
+        var currAnswer = AllQuestions.First(x => x.QuestionId == value.QuestionId).Answers.First(x => x.AnswerId == value.AnswerId);
+        if(currAnswer.IsFinal is false)
+        {
+            var nextQ = AllQuestions.First(x => x.QuestionId == currAnswer.QuestionIdRef);
+            QuestionWithAnswers.Add(new QuestionWithAnswer { QuestionId = nextQ.QuestionId, Pos = q.Pos + 1 });
+        } else
+        {
+            FinalResult = AllResults.First(x => x.ResultId == currAnswer.ResultIdRef);
+        }
+    }
+}
